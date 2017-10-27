@@ -444,7 +444,10 @@ class TempAuth(object):
             account, user = account_user.split(':', 1)
             account_id = self.users[account_user]['url'].rsplit('/', 1)[-1]
             path = env['PATH_INFO']
-            env['PATH_INFO'] = path.replace(account_user, account_id, 1)
+            splitted = split_path(path, 2, 3, True)
+            env['PATH_INFO'] = '/%s/%s/' % (splitted[0], account_id)
+            if splitted[2] is not None:
+                env['PATH_INFO'] += splitted[2]
             valid_signature = base64.encodestring(hmac.new(
                 self.users[account_user]['key'],
                 s3_auth_details['string_to_sign'],
