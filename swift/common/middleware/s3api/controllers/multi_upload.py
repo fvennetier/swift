@@ -99,6 +99,7 @@ DEFAULT_MAX_PARTS_LISTING = 1000
 DEFAULT_MAX_UPLOADS = 1000
 
 MAX_COMPLETE_UPLOAD_BODY_SIZE = 2048 * 1024
+PART_NUM_FORMAT = '%06d'
 
 
 def _get_upload_info(req, app, upload_id):
@@ -212,8 +213,9 @@ class PartController(Controller):
         _get_upload_info(req, self.app, upload_id)
 
         req.container_name += MULTIUPLOAD_SUFFIX
-        req.object_name = '%s/%s/%d' % (req.object_name, upload_id,
-                                        part_number)
+        req.object_name = ('%s/%s/' + PART_NUM_FORMAT) % (req.object_name,
+                                                          upload_id,
+                                                          part_number)
 
         req_timestamp = S3Timestamp.now()
         req.headers['X-Timestamp'] = req_timestamp.internal
@@ -625,10 +627,15 @@ class UploadController(Controller):
 
         query = {
             'format': 'json',
-            'limit': maxparts + 1,
             'prefix': '%s/%s/' % (req.object_name, upload_id),
             'delimiter': '/'
         }
+        if part_num_marker:
+            query['marker'] = ('%s/%s/' + PART_NUM_FORMAT) % (
+                req.object_name, upload_id, part_num_marker)
+        if maxparts:
+            query['end_marker'] = ('%s/%s/' + PART_NUM_FORMAT) % (
+                req.object_name, upload_id, part_num_marker + maxparts + 1)
 
         container = req.container_name + MULTIUPLOAD_SUFFIX
         resp = req.get_response(self.app, container=container, obj='',
@@ -655,7 +662,7 @@ class UploadController(Controller):
 
         if objList:
             o = objList[-1]
-            last_part = os.path.basename(o['name'])
+            last_part = int(os.path.basename(o['name']))
 
         result_elem = Element('ListPartsResult')
         SubElement(result_elem, 'Bucket').text = req.container_name
@@ -683,8 +690,9 @@ class UploadController(Controller):
             'true' if truncated else 'false'
 
         for i in objList:
+            part_num = int(i['name'].split('/')[-1])
             part_elem = SubElement(result_elem, 'Part')
-            SubElement(part_elem, 'PartNumber').text = i['name'].split('/')[-1]
+            SubElement(part_elem, 'PartNumber').text = str(part_num)
             SubElement(part_elem, 'LastModified').text = \
                 i['last_modified'][:-3] + 'Z'
             SubElement(part_elem, 'ETag').text = '"%s"' % i['hash']
@@ -818,7 +826,7 @@ class UploadController(Controller):
                                           for c in etag):
                     raise InvalidPart(upload_id=upload_id,
                                       part_number=part_number)
-                raw_path = '/%s/%s/%s/%d' % (
+                raw_path = ('/%s/%s/%s/' + PART_NUM_FORMAT) % (
                     container, req.object_name, upload_id, part_number)
                 manifest.append({
                     'path': wsgi_to_str(raw_path),

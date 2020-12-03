@@ -488,7 +488,7 @@ class TestS3ApiMiddleware(S3ApiTestCase):
                                     'object/123456789abcdef',
                             swob.HTTPOk, {}, None)
         self.swift.register('PUT', '/v1/AUTH_test/bucket+segments/'
-                                   'object/123456789abcdef/1',
+                                   'object/123456789abcdef/000001',
                             swob.HTTPCreated, {}, None)
         req = Request.blank('/bucket/object?uploadId=123456789abcdef'
                             '&partNumber=1',
@@ -501,7 +501,7 @@ class TestS3ApiMiddleware(S3ApiTestCase):
             status, headers, body = self.call_s3api(req)
             self.assertIn('swift.backend_path', req.environ)
             self.assertEqual(
-                '/v1/AUTH_test/bucket+segments/object/123456789abcdef/1',
+                '/v1/AUTH_test/bucket+segments/object/123456789abcdef/000001',
                 req.environ['swift.backend_path'])
 
         _, _, headers = self.swift.calls_with_headers[-1]
@@ -518,7 +518,7 @@ class TestS3ApiMiddleware(S3ApiTestCase):
                                     'object/123456789abcdef',
                             swob.HTTPOk, {}, None)
         self.swift.register('PUT', '/v1/AUTH_test/bucket+segments/'
-                                   'object/123456789abcdef/1',
+                                   'object/123456789abcdef/000001',
                             swob.HTTPCreated, {}, None)
         req = Request.blank('/bucket/object?uploadId=123456789abcdef'
                             '&partNumber=1',
@@ -532,7 +532,7 @@ class TestS3ApiMiddleware(S3ApiTestCase):
             status, headers, body = self.call_s3api(req)
             self.assertIn('swift.backend_path', req.environ)
             self.assertEqual(
-                '/v1/AUTH_test/bucket+segments/object/123456789abcdef/1',
+                '/v1/AUTH_test/bucket+segments/object/123456789abcdef/000001',
                 req.environ['swift.backend_path'])
 
         _, _, headers = self.swift.calls_with_headers[-1]

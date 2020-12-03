@@ -55,32 +55,34 @@ OBJECT_MANIFEST = \
       'content_type': 'application/octet-stream',
       'etag': '0123456789abcdef',
       'last_modified': '2018-05-21T08:40:58.000000',
-      'path': '/bucket+segments/object/X/1'},
+      'path': '/bucket+segments/object/X/000001'},
      {'bytes': 21,
       'content_type': 'application/octet-stream',
       'etag': 'fedcba9876543210',
       'last_modified': '2018-05-21T08:40:59.000000',
-      'path': '/bucket+segments/object/X/2'}]
+      'path': '/bucket+segments/object/X/000002'}]
 
 OBJECTS_TEMPLATE = \
-    (('object/X/1', '2014-05-07T19:47:51.592270', '0123456789abcdef', 100),
-     ('object/X/2', '2014-05-07T19:47:52.592270', 'fedcba9876543210', 200))
+    (('object/X/000001', '2014-05-07T19:47:51.592270',
+      '0123456789abcdef', 100),
+     ('object/X/000002', '2014-05-07T19:47:52.592270',
+      'fedcba9876543210', 200))
 
 MULTIPARTS_TEMPLATE = \
     (('object/X', '2014-05-07T19:47:50.592270', 'HASH', 1),
-     ('object/X/1', '2014-05-07T19:47:51.592270', '0123456789abcdef', 11),
-     ('object/X/2', '2014-05-07T19:47:52.592270', 'fedcba9876543210', 21),
+     ('object/X/000001', '2014-05-07T19:47:51.592270', '0123456789abcdef', 11),
+     ('object/X/000002', '2014-05-07T19:47:52.592270', 'fedcba9876543210', 21),
      ('object/Y', '2014-05-07T19:47:53.592270', 'HASH', 2),
-     ('object/Y/1', '2014-05-07T19:47:54.592270', '0123456789abcdef', 12),
-     ('object/Y/2', '2014-05-07T19:47:55.592270', 'fedcba9876543210', 22),
+     ('object/Y/000001', '2014-05-07T19:47:54.592270', '0123456789abcdef', 12),
+     ('object/Y/000002', '2014-05-07T19:47:55.592270', 'fedcba9876543210', 22),
      ('object/Z', '2014-05-07T19:47:56.592270', 'HASH', 3),
-     ('object/Z/1', '2014-05-07T19:47:57.592270', '0123456789abcdef', 13),
-     ('object/Z/2', '2014-05-07T19:47:58.592270', 'fedcba9876543210', 23),
+     ('object/Z/000001', '2014-05-07T19:47:57.592270', '0123456789abcdef', 13),
+     ('object/Z/000002', '2014-05-07T19:47:58.592270', 'fedcba9876543210', 23),
      ('subdir/object/Z', '2014-05-07T19:47:58.592270', 'HASH', 4),
-     ('subdir/object/Z/1', '2014-05-07T19:47:58.592270', '0123456789abcdef',
-      41),
-     ('subdir/object/Z/2', '2014-05-07T19:47:58.592270', 'fedcba9876543210',
-      41))
+     ('subdir/object/Z/000001', '2014-05-07T19:47:58.592270',
+      '0123456789abcdef', 41),
+     ('subdir/object/Z/000002', '2014-05-07T19:47:58.592270',
+      'fedcba9876543210', 41))
 
 S3_ETAG = '"%s-2"' % hashlib.md5(binascii.a2b_hex(
     '0123456789abcdef0123456789abcdef'
@@ -135,11 +137,11 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
                             swob.HTTPNoContent, {}, None)
         self.swift.register('GET', segment_bucket + '/object/invalid',
                             swob.HTTPNotFound, {}, None)
-        self.swift.register('PUT', segment_bucket + '/object/X/1',
+        self.swift.register('PUT', segment_bucket + '/object/X/000001',
                             swob.HTTPCreated, put_headers, None)
-        self.swift.register('DELETE', segment_bucket + '/object/X/1',
+        self.swift.register('DELETE', segment_bucket + '/object/X/000001',
                             swob.HTTPNoContent, {}, None)
-        self.swift.register('DELETE', segment_bucket + '/object/X/2',
+        self.swift.register('DELETE', segment_bucket + '/object/X/000002',
                             swob.HTTPNoContent, {}, None)
 
         mp_manifest = bucket + '/object?format=raw&multipart-manifest=get'
@@ -149,7 +151,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
                              'X-Object-Sysmeta-Swift3-Etag': S3_ETAG,
                              'X-Static-Large-Object': 'True'},
                             json.dumps(OBJECT_MANIFEST))
-        self.swift.register('HEAD', segment_bucket + '/object/X/1',
+        self.swift.register('HEAD', segment_bucket + '/object/X/000001',
                             swob.HTTPOk,
                             {'etag': '0123456789abcdef',
                              'content-type': 'application/octet-stream',
@@ -178,7 +180,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         self.assertEqual(status, '200 OK')
         self.assertEqual([
             ('HEAD', '/v1/AUTH_test/bucket+segments/object/X'),
-            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/1'),
+            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/000001'),
         ], self.swift.calls)
 
     @s3acl
@@ -365,8 +367,8 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         query = 'upload-id-marker=Y&key-marker=object'
         multiparts = \
             (('object/Y', '2014-05-07T19:47:53.592270', 'HASH', 2),
-             ('object/Y/1', '2014-05-07T19:47:54.592270', 'HASH', 12),
-             ('object/Y/2', '2014-05-07T19:47:55.592270', 'HASH', 22))
+             ('object/Y/000001', '2014-05-07T19:47:54.592270', 'HASH', 12),
+             ('object/Y/000002', '2014-05-07T19:47:55.592270', 'HASH', 22))
 
         status, headers, body = \
             self._test_bucket_multipart_uploads_GET(query, multiparts)
@@ -396,11 +398,11 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         query = 'key-marker=object'
         multiparts = \
             (('object/X', '2014-05-07T19:47:50.592270', 'HASH', 1),
-             ('object/X/1', '2014-05-07T19:47:51.592270', 'HASH', 11),
-             ('object/X/2', '2014-05-07T19:47:52.592270', 'HASH', 21),
+             ('object/X/000001', '2014-05-07T19:47:51.592270', 'HASH', 11),
+             ('object/X/000002', '2014-05-07T19:47:52.592270', 'HASH', 21),
              ('object/Y', '2014-05-07T19:47:53.592270', 'HASH', 2),
-             ('object/Y/1', '2014-05-07T19:47:54.592270', 'HASH', 12),
-             ('object/Y/2', '2014-05-07T19:47:55.592270', 'HASH', 22))
+             ('object/Y/000001', '2014-05-07T19:47:54.592270', 'HASH', 12),
+             ('object/Y/000002', '2014-05-07T19:47:55.592270', 'HASH', 22))
         status, headers, body = \
             self._test_bucket_multipart_uploads_GET(query, multiparts)
         elem = fromstring(body, 'ListMultipartUploadsResult')
@@ -430,8 +432,8 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         query = 'prefix=X'
         multiparts = \
             (('object/X', '2014-05-07T19:47:50.592270', 'HASH', 1),
-             ('object/X/1', '2014-05-07T19:47:51.592270', 'HASH', 11),
-             ('object/X/2', '2014-05-07T19:47:52.592270', 'HASH', 21))
+             ('object/X/000001', '2014-05-07T19:47:51.592270', 'HASH', 11),
+             ('object/X/000002', '2014-05-07T19:47:52.592270', 'HASH', 21))
         status, headers, body = \
             self._test_bucket_multipart_uploads_GET(query, multiparts)
         elem = fromstring(body, 'ListMultipartUploadsResult')
@@ -458,23 +460,29 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         query = 'delimiter=/'
         multiparts = \
             (('object/X', '2014-05-07T19:47:50.592270', 'HASH', 1),
-             ('object/X/1', '2014-05-07T19:47:51.592270', 'HASH', 11),
-             ('object/X/2', '2014-05-07T19:47:52.592270', 'HASH', 21),
+             ('object/X/000001', '2014-05-07T19:47:51.592270', 'HASH', 11),
+             ('object/X/000002', '2014-05-07T19:47:52.592270', 'HASH', 21),
              ('object/Y', '2014-05-07T19:47:50.592270', 'HASH', 2),
-             ('object/Y/1', '2014-05-07T19:47:51.592270', 'HASH', 21),
-             ('object/Y/2', '2014-05-07T19:47:52.592270', 'HASH', 22),
+             ('object/Y/000001', '2014-05-07T19:47:51.592270', 'HASH', 21),
+             ('object/Y/000002', '2014-05-07T19:47:52.592270', 'HASH', 22),
              ('object/Z', '2014-05-07T19:47:50.592270', 'HASH', 3),
-             ('object/Z/1', '2014-05-07T19:47:51.592270', 'HASH', 31),
-             ('object/Z/2', '2014-05-07T19:47:52.592270', 'HASH', 32),
+             ('object/Z/000001', '2014-05-07T19:47:51.592270', 'HASH', 31),
+             ('object/Z/000002', '2014-05-07T19:47:52.592270', 'HASH', 32),
              ('subdir/object/X', '2014-05-07T19:47:50.592270', 'HASH', 4),
-             ('subdir/object/X/1', '2014-05-07T19:47:51.592270', 'HASH', 41),
-             ('subdir/object/X/2', '2014-05-07T19:47:52.592270', 'HASH', 42),
+             ('subdir/object/X/000001', '2014-05-07T19:47:51.592270',
+              'HASH', 41),
+             ('subdir/object/X/000002', '2014-05-07T19:47:52.592270',
+              'HASH', 42),
              ('subdir/object/Y', '2014-05-07T19:47:50.592270', 'HASH', 5),
-             ('subdir/object/Y/1', '2014-05-07T19:47:51.592270', 'HASH', 51),
-             ('subdir/object/Y/2', '2014-05-07T19:47:52.592270', 'HASH', 52),
+             ('subdir/object/Y/000001', '2014-05-07T19:47:51.592270',
+              'HASH', 51),
+             ('subdir/object/Y/000002', '2014-05-07T19:47:52.592270',
+              'HASH', 52),
              ('subdir2/object/Z', '2014-05-07T19:47:50.592270', 'HASH', 6),
-             ('subdir2/object/Z/1', '2014-05-07T19:47:51.592270', 'HASH', 61),
-             ('subdir2/object/Z/2', '2014-05-07T19:47:52.592270', 'HASH', 62))
+             ('subdir2/object/Z/000001', '2014-05-07T19:47:51.592270',
+              'HASH', 61),
+             ('subdir2/object/Z/000002', '2014-05-07T19:47:52.592270',
+              'HASH', 62))
 
         status, headers, body = \
             self._test_bucket_multipart_uploads_GET(query, multiparts)
@@ -509,23 +517,29 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         query = 'delimiter=subdir'
         multiparts = \
             (('object/X', '2014-05-07T19:47:50.592270', 'HASH', 1),
-             ('object/X/1', '2014-05-07T19:47:51.592270', 'HASH', 11),
-             ('object/X/2', '2014-05-07T19:47:52.592270', 'HASH', 21),
+             ('object/X/000001', '2014-05-07T19:47:51.592270', 'HASH', 11),
+             ('object/X/000002', '2014-05-07T19:47:52.592270', 'HASH', 21),
              ('dir/subdir/object/X', '2014-05-07T19:47:50.592270',
               'HASH', 3),
-             ('dir/subdir/object/X/1', '2014-05-07T19:47:51.592270',
+             ('dir/subdir/object/X/000001', '2014-05-07T19:47:51.592270',
               'HASH', 31),
-             ('dir/subdir/object/X/2', '2014-05-07T19:47:52.592270',
+             ('dir/subdir/object/X/000002', '2014-05-07T19:47:52.592270',
               'HASH', 32),
              ('subdir/object/X', '2014-05-07T19:47:50.592270', 'HASH', 4),
-             ('subdir/object/X/1', '2014-05-07T19:47:51.592270', 'HASH', 41),
-             ('subdir/object/X/2', '2014-05-07T19:47:52.592270', 'HASH', 42),
+             ('subdir/object/X/000001', '2014-05-07T19:47:51.592270',
+              'HASH', 41),
+             ('subdir/object/X/000002', '2014-05-07T19:47:52.592270',
+              'HASH', 42),
              ('subdir/object/Y', '2014-05-07T19:47:50.592270', 'HASH', 5),
-             ('subdir/object/Y/1', '2014-05-07T19:47:51.592270', 'HASH', 51),
-             ('subdir/object/Y/2', '2014-05-07T19:47:52.592270', 'HASH', 52),
+             ('subdir/object/Y/000001', '2014-05-07T19:47:51.592270',
+              'HASH', 51),
+             ('subdir/object/Y/000002', '2014-05-07T19:47:52.592270',
+              'HASH', 52),
              ('subdir2/object/Z', '2014-05-07T19:47:50.592270', 'HASH', 6),
-             ('subdir2/object/Z/1', '2014-05-07T19:47:51.592270', 'HASH', 61),
-             ('subdir2/object/Z/2', '2014-05-07T19:47:52.592270', 'HASH', 62))
+             ('subdir2/object/Z/000001', '2014-05-07T19:47:51.592270',
+              'HASH', 61),
+             ('subdir2/object/Z/000002', '2014-05-07T19:47:52.592270',
+              'HASH', 62))
 
         status, headers, body = \
             self._test_bucket_multipart_uploads_GET(query, multiparts)
@@ -560,13 +574,13 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         multiparts = \
             (('dir/subdir/object/X', '2014-05-07T19:47:50.592270',
               'HASH', 4),
-             ('dir/subdir/object/X/1', '2014-05-07T19:47:51.592270',
+             ('dir/subdir/object/X/000001', '2014-05-07T19:47:51.592270',
               'HASH', 41),
-             ('dir/subdir/object/X/2', '2014-05-07T19:47:52.592270',
+             ('dir/subdir/object/X/000002', '2014-05-07T19:47:52.592270',
               'HASH', 42),
              ('dir/object/X', '2014-05-07T19:47:50.592270', 'HASH', 5),
-             ('dir/object/X/1', '2014-05-07T19:47:51.592270', 'HASH', 51),
-             ('dir/object/X/2', '2014-05-07T19:47:52.592270', 'HASH', 52))
+             ('dir/object/X/000001', '2014-05-07T19:47:51.592270', 'HASH', 51),
+             ('dir/object/X/000002', '2014-05-07T19:47:52.592270', 'HASH', 52))
 
         status, headers, body = \
             self._test_bucket_multipart_uploads_GET(query, multiparts)
@@ -1296,7 +1310,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         segment_bucket = '/v1/AUTH_test/empty-bucket+segments'
 
         object_list = [{
-            'name': 'object/X/1',
+            'name': 'object/X/000001',
             'last_modified': self.last_modified,
             'hash': 'd41d8cd98f00b204e9800998ecf8427e',
             'bytes': '0',
@@ -1311,7 +1325,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
                                           'content-type': 'baz/quux'}, None)
         self.swift.register('PUT', '/v1/AUTH_test/empty-bucket/object',
                             swob.HTTPCreated, {}, None)
-        self.swift.register('DELETE', segment_bucket + '/object/X/1',
+        self.swift.register('DELETE', segment_bucket + '/object/X/000001',
                             swob.HTTPOk, {}, None)
         self.swift.register('DELETE', segment_bucket + '/object/X',
                             swob.HTTPOk, {}, None)
@@ -1338,7 +1352,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         put_headers = {'etag': self.etag, 'last-modified': self.last_modified}
 
         object_list = [{
-            'name': 'object/X/1',
+            'name': 'object/X/000001',
             'last_modified': self.last_modified,
             'hash': 'd41d8cd98f00b204e9800998ecf8427e',
             'bytes': '0',
@@ -1353,7 +1367,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
                                           'content-type': 'baz/quux'}, None)
         self.swift.register('PUT', '/v1/AUTH_test/empty-bucket/object',
                             swob.HTTPCreated, {}, None)
-        self.swift.register('DELETE', segment_bucket + '/object/X/1',
+        self.swift.register('DELETE', segment_bucket + '/object/X/000001',
                             swob.HTTPOk, {}, None)
         self.swift.register('DELETE', segment_bucket + '/object/X',
                             swob.HTTPOk, {}, None)
@@ -1390,12 +1404,12 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         segment_bucket = '/v1/AUTH_test/bucket+segments'
 
         object_list = [{
-            'name': 'object/X/1',
+            'name': 'object/X/000001',
             'last_modified': self.last_modified,
             'hash': '0123456789abcdef0123456789abcdef',
             'bytes': '100',
         }, {
-            'name': 'object/X/2',
+            'name': 'object/X/000002',
             'last_modified': self.last_modified,
             'hash': 'fedcba9876543210fedcba9876543210',
             'bytes': '1',
@@ -1934,8 +1948,8 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
             path for method, path in self.swift.calls if method == 'DELETE'
         ], [
             '/v1/AUTH_test/bucket+segments/object/X',
-            '/v1/AUTH_test/bucket+segments/object/X/1',
-            '/v1/AUTH_test/bucket+segments/object/X/2',
+            '/v1/AUTH_test/bucket+segments/object/X/000001',
+            '/v1/AUTH_test/bucket+segments/object/X/000002',
         ])
 
     @s3acl(s3acl_only=True)
@@ -2114,7 +2128,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
             ('HEAD', '/v1/AUTH_test/bucket'),
             ('HEAD', '/v1/AUTH_test/bucket+segments/object/X'),
             ('HEAD', '/v1/AUTH_test/src_bucket/src_obj'),
-            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/1'),
+            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/000001'),
         ])
         _, _, headers = self.swift.calls_with_headers[-2]
         self.assertEqual(headers['If-Match'], etag)
@@ -2171,7 +2185,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
             ('HEAD', '/v1/AUTH_test/bucket'),
             ('HEAD', '/v1/AUTH_test/bucket+segments/object/X'),
             ('HEAD', '/v1/AUTH_test/src_bucket/src_obj'),
-            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/1'),
+            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/000001'),
         ])
         _, _, headers = self.swift.calls_with_headers[-2]
         self.assertEqual(headers['If-None-Match'], etag)
@@ -2259,7 +2273,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
             ('HEAD', '/v1/AUTH_test/bucket'),
             ('HEAD', '/v1/AUTH_test/bucket+segments/object/X'),
             ('HEAD', '/v1/AUTH_test/src_bucket/src_obj'),
-            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/1'),
+            ('PUT', '/v1/AUTH_test/bucket+segments/object/X/000001'),
         ], self.swift.calls)
         put_headers = self.swift.calls_with_headers[-1][2]
         self.assertEqual('bytes=0-9', put_headers['Range'])
