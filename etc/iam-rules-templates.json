@@ -1,0 +1,74 @@
+{
+    "FullAccess": {
+        "Statement": [
+            {
+                "Sid": "FullAccess",
+                "Action": [
+                    "s3:*"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "*"
+                ]
+            }
+        ]
+    },
+    "RWBucket": {
+        "Statement": [
+            {
+                "Sid": "User1BucketAllObjects",
+                "Action": [
+                    "s3:ListBucket",
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::{bucket}",
+                    "arn:aws:s3:::{bucket}/*"
+                ]
+            }
+        ]
+    },
+    "RWBucketDirectory": {
+        "Statement": [
+            {
+                "Sid": "NavToUserFolder",
+                "Action": ["s3:ListBucket"],
+                "Effect": "Allow",
+                "Resource": ["arn:aws:s3:::{bucket}"],
+                "Condition": {"StringEquals":{"s3:prefix":["", "home/", "{directory}/"]}}
+            },
+            {
+                "Sid": "UserFolder",
+                "Action": ["s3:ListBucket"],
+                "Effect": "Allow",
+                "Resource": ["arn:aws:s3:::{bucket}"],
+                "Condition": {"StringLike":{"s3:prefix":["{directory}/*"]}}
+            },
+            {
+                "Sid": "UserFolderObjects",
+                "Action": ["s3:*"],
+                "Effect": "Allow",
+                "Resource": ["arn:aws:s3:::{bucket}/{directory}/*"]
+            }
+        ]
+    },
+    "ROBucket": {
+        "Statement": [
+            {
+                "Sid": "SharedBucketAllObjects",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:ListBucket"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::{bucket}",
+                    "arn:aws:s3:::{bucket}/*"
+                ]
+            }
+        ]
+    }
+}
