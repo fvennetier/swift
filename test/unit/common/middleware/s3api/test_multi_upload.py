@@ -52,7 +52,17 @@ XML = '<CompleteMultipartUpload>' \
 
 OBJECTS_TEMPLATE = \
     (('object/X/1', '2014-05-07T19:47:51.592270', '0123456789abcdef', 100),
-     ('object/X/2', '2014-05-07T19:47:52.592270', 'fedcba9876543210', 200))
+     ('object/X/2', '2014-05-07T19:47:52.592270', 'fedcba9876543210', 200),
+     ('object/X/3', '2014-05-07T19:47:53.592270', 'fedcba9876543211', 200),
+     ('object/X/4', '2014-05-07T19:47:54.592270', 'fedcba9876543212', 200),
+     ('object/X/5', '2014-05-07T19:47:55.592270', 'fedcba9876543213', 200),
+     ('object/X/6', '2014-05-07T19:47:56.592270', 'fedcba9876543214', 200),
+     ('object/X/7', '2014-05-07T19:47:57.592270', 'fedcba9876543215', 200),
+     ('object/X/8', '2014-05-07T19:47:58.592270', 'fedcba9876543216', 200),
+     ('object/X/9', '2014-05-07T19:47:59.592270', 'fedcba9876543217', 200),
+     ('object/X/10', '2014-05-07T19:48:00.592270', 'fedcba9876543218', 200),
+     ('object/X/11', '2014-05-07T19:48:01.592270', 'fedcba9876543219', 200),
+    )
 
 MULTIPARTS_TEMPLATE = \
     (('object/X', '2014-05-07T19:47:50.592270', 'HASH', 1),
@@ -90,6 +100,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         objects = [{'name': item[0], 'last_modified': item[1],
                     'hash': item[2], 'bytes': item[3]}
                    for item in OBJECTS_TEMPLATE]
+        objects.sort(key=lambda o: o['name'])
 
         self.swift.register('PUT', segment_bucket,
                             swob.HTTPAccepted, {}, None)
@@ -101,6 +112,10 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
             'GET', '%s?delimiter=/&format=json&prefix=object/X/' % (
                 segment_bucket, ),
             swob.HTTPOk, {}, json.dumps(objects[:1]))
+        self.swift.register(
+            'GET', '%s?delimiter=/&format=json&limit=6&prefix=object/X/' % (
+                segment_bucket, ),
+            swob.HTTPOk, {}, json.dumps(objects[:6]))
         self.swift.register(
             'GET', '%s?delimiter=/&format=json&marker=%s&prefix=object/X/' % (
                 segment_bucket, objects[0]['name']),
@@ -124,10 +139,10 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
                             swob.HTTPNotFound, {}, None)
         self.swift.register('PUT', segment_bucket + '/object/X/1',
                             swob.HTTPCreated, put_headers, None)
-        self.swift.register('DELETE', segment_bucket + '/object/X/1',
-                            swob.HTTPNoContent, {}, None)
-        self.swift.register('DELETE', segment_bucket + '/object/X/2',
-                            swob.HTTPNoContent, {}, None)
+        for i in range(len(objects)):
+            self.swift.register('DELETE',
+                                segment_bucket + '/object/X/%d' % (i+1),
+                                swob.HTTPNoContent, {}, None)
 
     @s3acl
     def test_bucket_upload_part(self):
@@ -1594,10 +1609,10 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         self.assertEqual(elem.find('Owner/ID').text, 'test:tester')
         self.assertEqual(elem.find('StorageClass').text, 'STANDARD')
         self.assertEqual(elem.find('PartNumberMarker').text, '0')
-        self.assertEqual(elem.find('NextPartNumberMarker').text, '2')
+        self.assertEqual(elem.find('NextPartNumberMarker').text, '11')
         self.assertEqual(elem.find('MaxParts').text, '1000')
         self.assertEqual(elem.find('IsTruncated').text, 'false')
-        self.assertEqual(len(elem.findall('Part')), 2)
+        self.assertEqual(len(elem.findall('Part')), 11)
         for p in elem.findall('Part'):
             partnum = int(p.find('PartNumber').text)
             self.assertEqual(p.find('LastModified').text,
@@ -1652,6 +1667,21 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         self.assertEqual(len(elem.findall('Part')), 1)
         self.assertEqual(status.split()[0], '200')
 
+    def test_object_list_parts_max_parts_2(self):
+        req = Request.blank('/bucket/object?uploadId=X&max-parts=5',
+                            environ={'REQUEST_METHOD': 'GET'},
+                            headers={'Authorization': 'AWS test:tester:hmac',
+                                     'Date': self.get_date_header()})
+        status, headers, body = self.call_s3api(req)
+        elem = fromstring(body, 'ListPartsResult')
+        self.assertEqual(elem.find('IsTruncated').text, 'true')
+        self.assertEqual(len(elem.findall('Part')), 5)
+        self.assertEqual(status.split()[0], '200')
+        self.assertEqual(elem.find('NextPartNumberMarker').text, '5')
+        for i, p in enumerate(elem.findall('Part'), start=1):
+            partnum = int(p.find('PartNumber').text)
+            self.assertEqual(partnum, i)
+
     def test_object_list_parts_str_max_parts(self):
         req = Request.blank('/bucket/object?uploadId=X&max-parts=invalid',
                             environ={'REQUEST_METHOD': 'GET'},
@@ -1683,10 +1713,10 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         self.assertEqual(elem.find('Owner/ID').text, 'test:tester')
         self.assertEqual(elem.find('StorageClass').text, 'STANDARD')
         self.assertEqual(elem.find('PartNumberMarker').text, '0')
-        self.assertEqual(elem.find('NextPartNumberMarker').text, '2')
+        self.assertEqual(elem.find('NextPartNumberMarker').text, '11')
         self.assertEqual(elem.find('MaxParts').text, '1000')
         self.assertEqual(elem.find('IsTruncated').text, 'false')
-        self.assertEqual(len(elem.findall('Part')), 2)
+        self.assertEqual(len(elem.findall('Part')), 11)
         for p in elem.findall('Part'):
             partnum = int(p.find('PartNumber').text)
             self.assertEqual(p.find('LastModified').text,
@@ -1714,7 +1744,7 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
                                      'Date': self.get_date_header()})
         status, headers, body = self.call_s3api(req)
         elem = fromstring(body, 'ListPartsResult')
-        self.assertEqual(len(elem.findall('Part')), 1)
+        self.assertEqual(len(elem.findall('Part')), 10)
         self.assertEqual(elem.find('Part/PartNumber').text, '2')
         self.assertEqual(elem.find('PartNumberMarker').text, '1')
         self.assertEqual(status.split()[0], '200')
@@ -1885,7 +1915,16 @@ class TestS3ApiMultiUpload(S3ApiTestCase):
         ], [
             '/v1/AUTH_test/bucket+segments/object/X',
             '/v1/AUTH_test/bucket+segments/object/X/1',
+            '/v1/AUTH_test/bucket+segments/object/X/10',
+            '/v1/AUTH_test/bucket+segments/object/X/11',
             '/v1/AUTH_test/bucket+segments/object/X/2',
+            '/v1/AUTH_test/bucket+segments/object/X/3',
+            '/v1/AUTH_test/bucket+segments/object/X/4',
+            '/v1/AUTH_test/bucket+segments/object/X/5',
+            '/v1/AUTH_test/bucket+segments/object/X/6',
+            '/v1/AUTH_test/bucket+segments/object/X/7',
+            '/v1/AUTH_test/bucket+segments/object/X/8',
+            '/v1/AUTH_test/bucket+segments/object/X/9',
         ])
 
     @s3acl(s3acl_only=True)
